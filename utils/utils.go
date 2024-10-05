@@ -122,13 +122,19 @@ func RespondError(w http.ResponseWriter, statusCode int, err error, messageToUse
 	}
 }
 
+// no need of adding userRoleId in token
+// we should add user_id, session_id, email and the data that is frequently needed so that we dont need to hit db again and again
+
 // JwtToken generates SHA256 for a given string
 func JwtToken(userId, userRoleId string) (string, error) {
 	secretKey := []byte(os.Getenv("SESSION_KEY"))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":     userId,
 		"userRoleId": userRoleId,
-		"exp":        time.Now().Add(time.Hour).Unix(),
+
+		// add token creation time also
+
+		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 
 	return token.SignedString(secretKey)

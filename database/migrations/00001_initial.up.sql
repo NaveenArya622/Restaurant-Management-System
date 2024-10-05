@@ -1,3 +1,7 @@
+
+-- migration file name should be related to the work done in the file
+-- if i am adding a table so the migration file name can be 00002_adding_dishes_table.up.sql
+
 BEGIN;
 
 -- Users Table
@@ -20,6 +24,9 @@ CREATE TYPE role_type AS ENUM (
 
 -- User Roles Table
 CREATE TABLE IF NOT EXISTS user_roles (
+
+    -- no need of id here only user_id and role_name is enough
+
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) NOT NULL,
     role_name role_type NOT NULL,
@@ -32,8 +39,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_role ON user_roles(user_id, role_name) 
 -- User Session Table
 CREATE TABLE IF NOT EXISTS user_session (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    -- no need of user_role_id in user_session table
+
     user_role_id UUID REFERENCES user_roles(id) NOT NULL,
     user_id UUID REFERENCES users(id) NOT NULL,  -- Corrected table reference to 'users'
+
+    -- no need of session_token in user_session table
+
     session_token TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -42,6 +55,9 @@ CREATE TABLE IF NOT EXISTS user_session (
 CREATE TABLE IF NOT EXISTS user_address (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) NOT NULL,
+
+    -- no need to check address validation here
+
     address VARCHAR(30) CHECK (address ~ '^[a-zA-Z0-9\s]*$'),
     state VARCHAR(16) CHECK (state ~ '^[a-zA-Z\s]*$'),
     city VARCHAR(20) CHECK (city ~ '^[a-zA-Z\s]*$'),

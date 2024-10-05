@@ -14,6 +14,9 @@ import (
 )
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
+
+	// try to put model in models folder
+
 	body := struct {
 		Email    string      `json:"email"`
 		Password string      `json:"password"`
@@ -32,6 +35,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, userErr, "Failed to find user")
 		return
 	}
+
+	// need to store session_id and user_id only in user_session table
+
 	// create user session
 	sessionToken, jwtError := utils.JwtToken(userId, userRoleId)
 	if jwtError != nil {
@@ -46,6 +52,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logrus.Printf("Login Successfully.")
+
+	// status codes should be StatusOK 200
+
 	utils.RespondJSON(w, http.StatusCreated, models.Login{
 		Token:   sessionToken,
 		Type:    "Bearer",
@@ -71,6 +80,9 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logrus.Printf("Logout Successfully.")
+
+	// status codes should be StatusOK 200
+
 	utils.RespondJSON(w, http.StatusAccepted, models.Message{
 		Message: "Logout Successfully.",
 	})
@@ -253,6 +265,9 @@ func UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Failed to update Address:")
 		return
 	}
+
+	// status code should be OK
+
 	logrus.Printf("Address Created successfully")
 	utils.RespondJSON(w, http.StatusCreated, models.Message{
 		Message: "Address Update successfully",

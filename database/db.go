@@ -89,6 +89,8 @@ func Tx(fn func(tx *sqlx.Tx) error) error {
 	return err
 }
 
+// Try not to put any unused code as this function is not in used.
+
 // SetupBindVars prepares the SQL statement for batch insert
 func SetupBindVars(stmt, bindVars string, length int) string {
 	bindVars += ","
