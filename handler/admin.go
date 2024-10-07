@@ -118,6 +118,8 @@ func GetSubAdmins(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+//comments :- i can't see any use of RegisterAdmin function ? admin can't register
+
 func RegisterAdmin() {
 	exists, existsErr := dbHelper.IsUserRoleExists(os.Getenv("ADMIN_EMAIL"), models.RoleAdmin)
 	if existsErr != nil {
