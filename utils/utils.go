@@ -172,6 +172,8 @@ func CheckPassword(password, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
+//todo unused function val
+
 // CheckValidation returns the current validation status
 func CheckValidation(i interface{}) validator.ValidationErrors {
 	v := validator.New()

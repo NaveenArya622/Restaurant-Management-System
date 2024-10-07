@@ -205,6 +205,8 @@ func UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		body.Address = userAddress.Address
 	}
 
+	// about state validation :- this check is not valid if frontend team use dropdown
+
 	if len(body.State) > 16 || len(body.State) <= 2 {
 		if body.State != "" {
 			logrus.Printf("State must be with in 2 to 16 letter.")
