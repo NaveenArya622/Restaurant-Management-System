@@ -50,13 +50,23 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, hasErr, "Failed to secure password")
 		return
 	}
+
 	txErr := database.Tx(func(tx *sqlx.Tx) error {
+
+		// IsUserExists is a independent query so dont put it in transaction
+
 		userID, existsErr := dbHelper.IsUserExists(body.Email)
 		if existsErr != nil {
 			logrus.Printf("Failed to parse request body: %s", existsErr)
+
+			// no need to send respond here
+
 			utils.RespondError(w, http.StatusInternalServerError, existsErr, "Failed to check user existence")
 			return existsErr
 		}
+
+		// why are you calling createuserRole two times
+
 		if len(userID) > 0 {
 			roleErr := dbHelper.CreateUserRole(tx, userID, subAdminCtx.ID, models.RoleUser)
 			if roleErr != nil {
@@ -95,6 +105,12 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, nil, "Invalid Filter Email.")
 		return
 	}
+
+	/*
+		there is no need of if else and writing this much big code
+		get the logged used id and simply return the users accordingly.
+	*/
+
 	adminCtx := middlewares.UserContext(r)
 	if adminCtx.CurrentRole == models.RoleAdmin {
 		UserCount, countErr := dbHelper.GetUserCount(models.RoleUser, Filters)
@@ -109,6 +125,9 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			utils.RespondError(w, http.StatusInternalServerError, err, "Unable to get Users")
 			return
 		}
+
+		// status code should be ok
+
 		logrus.Printf("Get users successfully.")
 		utils.RespondJSON(w, http.StatusCreated, models.GetUsers{
 			Message:    "Get users successfully.",
@@ -144,6 +163,11 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 func RemoveUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "userId")
 	adminCtx := middlewares.UserContext(r)
+
+	/*
+		same here also no need to put if else
+	*/
+
 	if adminCtx.CurrentRole == models.RoleAdmin {
 		err := dbHelper.RemoveUser(id, models.RoleUser)
 		if err != nil {

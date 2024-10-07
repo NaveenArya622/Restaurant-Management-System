@@ -20,12 +20,17 @@ func main() {
 
 	// create server instance
 	srv := server.SetupRoutes()
+
+	/*
+		DB credential should be in ENVIRONMENT VARIABLES and should be accessed using os.Getenv()
+	*/
+
 	if err := database.ConnectAndMigrate(
-		"localhost",
-		"5434",
-		"rms",
-		"local",
-		"local",
+		"localhost", // DB_HOST
+		"5434",      // DB_PORT
+		"rms",       // DB_NAME
+		"local",     // DB_USER
+		"local",     // DB_PASS
 		database.SSLModeDisable); err != nil {
 		logrus.Panicf("Failed to initialize and migrate database with error: %+v", err)
 	}

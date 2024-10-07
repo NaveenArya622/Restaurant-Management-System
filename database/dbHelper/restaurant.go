@@ -307,6 +307,8 @@ func GetRestaurantDishes(restaurantID string, Filters models.DishFilters) ([]mod
 	return Dishes, nil
 }
 
+// unused function
+
 func GetRestaurantDishById(restaurantID, dishID string) (*models.Dishes, error) {
 	// language=SQL
 	SQL := `SELECT 
@@ -374,6 +376,8 @@ func GetRestaurantDishesByUserID(restaurantID, createdBy string, Filters models.
 	return Dishes, nil
 }
 
+// Removed unused function
+
 func GetRestaurantDishByIDAndUserID(restaurantID, dishID, createdBy string) (*models.Dishes, error) {
 	// language=SQL
 	SQL := `SELECT 
@@ -403,6 +407,9 @@ func GetRestaurantsCount(Filters models.Filters) (int64, error) {
 	SQL := `SELECT 
        			COUNT(r.id)
 			FROM restaurants r
+			
+			-- do same here as GetRestaurants 
+			
 			WHERE r.archived_at IS NULL AND r.created_by::text LIKE '%' || $1 || '%'  AND
 				r.name LIKE '%' || $2 || '%' AND  r.email LIKE '%' || $3 || '%'`
 	var count int64
@@ -431,6 +438,10 @@ func GetRestaurants(Filters models.Filters) ([]models.Restaurant, error) {
 				r.lat,
 				r.lng
 			FROM restaurants r
+			
+			-- you just need to put a check for created by that is id only
+			-- no need of limit and offset
+
 			WHERE r.archived_at IS NULL AND r.created_by::text LIKE '%' || $1 || '%'  AND
 				r.name LIKE '%' || $2 || '%' AND  r.email LIKE '%' || $3 || '%'
 			ORDER BY $4

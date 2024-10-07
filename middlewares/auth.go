@@ -26,6 +26,15 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			utils.RespondError(w, http.StatusUnauthorized, jwtErr, "Invalid Token")
 			return
 		}
+
+		/*
+			need to fetch archived_at form user_session table
+			and check whether its is null or not and if the session arhcived_at is not null means the user has
+			logged out so send message and status code 401 unauthorized
+		*/
+
+		// keep only necessary things in context area
+
 		user, err := dbHelper.GetUserBySession(token)
 		if err != nil || user == nil {
 			logrus.WithError(err).Errorf("Failed to get user with token: %s", token)

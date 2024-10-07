@@ -34,6 +34,8 @@ func CreateUserAddress(userID, address, state, city, pinCode string, lat, lng fl
 	return err
 }
 
+// no need to put extra things in context area
+
 func GetUserBySession(sessionToken string) (*models.User, error) {
 	// language=SQL
 	SQL := `SELECT 
@@ -112,6 +114,8 @@ func GetUserRoleIDByPassword(email, password string, role models.Role) (string, 
 	}
 	return userID, userRoleId, nil
 }
+
+// you can put logout time in archived_at  instead of deleting the user_session
 
 func DeleteSessionToken(token string) error {
 	// language=SQL
