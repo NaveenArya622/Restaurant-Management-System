@@ -42,7 +42,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, sessionErr, "Failed to create user session")
 		return
 	}
-	//TODO useErrof instead of printf because we have logging error  not an info level **DONE**
+	//TODO useErrorf instead of printf because we have logging error  not an info level **DONE**
 	logrus.Infof("Login Successfully.")
 	utils.RespondJSON(w, http.StatusCreated, models.Login{
 		Token:   sessionToken,
@@ -53,7 +53,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 func GetInfo(w http.ResponseWriter, r *http.Request) {
 	userCtx := middlewares.UserContext(r)
-	logrus.Errorf("Get information Successfully.")
+	logrus.Infof("Get information Successfully.")
 	utils.RespondJSON(w, http.StatusOK, models.GetUser{
 		Message: "Get information Successfully.",
 		User:    *userCtx,
@@ -74,7 +74,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// todo :- use validator package to validate empty string or not in case if any entry of updating is empty then we should return not update the existing details because updating paylload is not valid
+// TODO :- use validator package to validate empty string or not in case if any entry of updating is empty then we should return not update the existing details because updating paylload is not valid(try this use lte and get for consstraint)
 func UpdateSelfInfo(w http.ResponseWriter, r *http.Request) {
 	var body models.RegisterUserBody
 

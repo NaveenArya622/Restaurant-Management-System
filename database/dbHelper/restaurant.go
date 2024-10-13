@@ -12,6 +12,7 @@ func CreateRestaurant(name, email, createdBy, address, state, city, pinCode stri
 	// language=SQL
 	SQL := `INSERT INTO restaurants(name, email, created_by, address, state, city, pin_code, lat, lng) VALUES ($1, TRIM(LOWER($2)), $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 	var userID string
+	// TODO use exec not necessary to return user id
 	if err := database.RMS.QueryRowx(SQL, name, email, createdBy, address, state, city, pinCode, lat, lng).Scan(&userID); err != nil {
 		return "", err
 	}
@@ -22,6 +23,7 @@ func CreateDish(restaurantID, createdBy, name, description string, quantity, pri
 	// language=SQL
 	SQL := `INSERT INTO dishes(restaurants_id, quantity, price, discount, created_by, name, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	var userID string
+	// TODO variable naming right do not return userid
 	if err := database.RMS.QueryRowx(SQL, restaurantID, quantity, price, discount, createdBy, name, description).Scan(&userID); err != nil {
 		return "", err
 	}
@@ -415,6 +417,8 @@ func GetRestaurantsCount(Filters models.Filters) (int64, error) {
 }
 
 func GetRestaurants(Filters models.Filters) ([]models.Restaurant, error) {
+
+	//TODO := if arguments list is to large use args []interface{}{} for better reading
 	// language=SQL
 	SQL := `SELECT 
        			r.id,
@@ -434,6 +438,7 @@ func GetRestaurants(Filters models.Filters) ([]models.Restaurant, error) {
 			ORDER BY $4
 			LIMIT $5
 			OFFSET $6`
+	//toDo :variable name in camel case convention
 	Restaurant := make([]models.Restaurant, 0)
 	err := database.RMS.Select(&Restaurant, SQL, Filters.CreatedBy, Filters.Name, Filters.Email, Filters.SortBy, Filters.PageSize, Filters.PageNumber*Filters.PageSize)
 	if err != nil {
