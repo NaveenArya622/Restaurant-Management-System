@@ -57,6 +57,7 @@ func IsAnyRoleExist(role models.Role) (bool, error) {
 }
 
 // todo address will be fetched in this single query not any other db call **done**
+// ToDO unmarshal the address json into an address object
 func GetUserBySession(sessionToken string) (*models.User, error) {
 	// language=SQL
 	SQL := `SELECT 
@@ -177,6 +178,7 @@ func IsUserRoleExists(email string, role models.Role) (bool, error) {
 	err := database.RMS.Get(&isUserRoleId, SQL, email, role)
 
 	if err != nil {
+		//TODO this below condition is not required you can remove it
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
@@ -387,6 +389,7 @@ func GetUsers(role models.Role, Filters models.Filters) ([]models.User, error) {
 
 	err := database.RMS.Select(&users, SQL, role, Filters.CreatedBy, Filters.Name, Filters.Email, Filters.SortBy, Filters.PageSize, Filters.PageSize*Filters.PageNumber)
 	if err != nil {
+		//todo in select clause err no rows is not returned therefore you can remove this condition
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

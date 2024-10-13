@@ -30,6 +30,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	if !utils.IsEmailValid(body.Email) {
 		logrus.Errorf("Invalid Email.")
+		//TODO := you can generate custom error message by errors.new function if you want to generate an custom error
 		utils.RespondError(w, http.StatusBadRequest, nil, "Invalid Email.")
 		return
 	}
@@ -91,9 +92,11 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
+	//ToDO change the name of filters to samll letter
 	Filters := utils.GetFilters(r)
 	if Filters.Email != "" && !utils.IsEmailValid(Filters.Email) {
 		logrus.Errorf("Invalid Filter Email.")
+		//TODO Why this statuscode is return
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "Invalid Filter Email.")
 		return
 	}
@@ -153,6 +156,7 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, rolesErr, "Unable to get Users")
 		return
 	}
+	//TODO this can be written into single transaction for removing redundancy
 	if adminCtx.CurrentRole == models.RoleAdmin {
 		txErr := database.Tx(func(tx *sqlx.Tx) error {
 			if multipleRoles {
@@ -182,6 +186,7 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		txErr := database.Tx(func(tx *sqlx.Tx) error {
+			// TODO use tx inside the transaction
 			if multipleRoles {
 				saveErr := dbHelper.RemoveRoleByAdminID(id, adminCtx.ID, models.RoleUser)
 				if saveErr != nil {
@@ -319,7 +324,7 @@ func CloseRestaurant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logrus.Infof("Restaurant Closed successfully.")
-	utils.RespondJSON(w, http.StatusCreated, models.Message{
+	utils.RespondJSON(w, http.StatusOK, models.Message{
 		Message: "Restaurant Closed successfully.",
 	})
 }
@@ -332,7 +337,10 @@ func GetRestaurants(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	adminCtx := middlewares.UserContext(r)
+
 	//TODO use errgroup when mutiple db calls for less time consuming **DONE**
+
+	//TODO follow camelCase convention in variable naming until it has public access for ex RestaurantsCount is restaurantsCount(like this)
 	var RestaurantsCount int64
 	var Restaurants []models.Restaurant
 	var errGroup errgroup.Group

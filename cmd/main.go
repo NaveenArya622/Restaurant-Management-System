@@ -1,16 +1,15 @@
 package main
 
 import (
+	"github.com/joho/godotenv"
 	"net/http"
 	"os"
 	"os/signal"
 	"rms/database"
-	"rms/handler"
 	"rms/server"
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,12 +33,14 @@ func main() {
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
 		database.SSLModeDisable); err != nil {
+		//TODO please use fatalf not errorf and see the the difference between fatalf and errorf
 		logrus.Errorf("Failed to initialize and migrate database with error: %+v", err)
 	}
 	logrus.Infof("migration successful!!")
-	handler.RegisterAdmin()
+	//handler.RegisterAdmin()
 
 	go func() {
+		//TODO please use error check by errors.IS function
 		if err := srv.Run(":8080"); err != nil && err != http.ErrServerClosed {
 			logrus.Errorf("Failed to run server with error: %+v", err)
 		}
