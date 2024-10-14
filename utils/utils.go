@@ -40,6 +40,7 @@ func (q FieldError) GetSingleError() string {
 	return errorString
 }
 
+// Always Keep models in model folder
 type clientError struct {
 	ID            string `json:"id"`
 	MessageToUser string `json:"messageToUser"`

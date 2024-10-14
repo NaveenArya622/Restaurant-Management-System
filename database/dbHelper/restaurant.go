@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// use Exec() instead of QueryRowx and no need to return restaurant id in this case
 func CreateRestaurant(name, email, createdBy, address, state, city, pinCode string, lat, lng float64) (string, error) {
 	// language=SQL
 	SQL := `INSERT INTO restaurants(name, email, created_by, address, state, city, pin_code, lat, lng) VALUES ($1, TRIM(LOWER($2)), $3, $4, $5, $6, $7, $8, $9) RETURNING id`
@@ -15,9 +16,12 @@ func CreateRestaurant(name, email, createdBy, address, state, city, pinCode stri
 	if err := database.RMS.QueryRowx(SQL, name, email, createdBy, address, state, city, pinCode, lat, lng).Scan(&userID); err != nil {
 		return "", err
 	}
+
+	// you are creating a dish and returning variable name with user id ?
 	return userID, nil
 }
 
+// use Exec() instead of QueryRowx and no need to return restaurant id in this case
 func CreateDish(restaurantID, createdBy, name, description string, quantity, price, discount int64) (string, error) {
 	// language=SQL
 	SQL := `INSERT INTO dishes(restaurants_id, quantity, price, discount, created_by, name, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
@@ -25,11 +29,15 @@ func CreateDish(restaurantID, createdBy, name, description string, quantity, pri
 	if err := database.RMS.QueryRowx(SQL, restaurantID, quantity, price, discount, createdBy, name, description).Scan(&userID); err != nil {
 		return "", err
 	}
+
+	// you are creating a dish and returning variable name with user id ?
 	return userID, nil
 }
 
 func IsRestaurantExists(email string) (bool, error) {
 	// language=SQL
+
+	// you will check restaurant existence using name and address not by email
 	SQL := `SELECT
 				r.id
        		FROM
@@ -37,6 +45,8 @@ func IsRestaurantExists(email string) (bool, error) {
 			WHERE
 				r.archived_at IS NULL
 				AND r.email = TRIM(LOWER($1))`
+
+	// no need to store restaurant id you are returning bool type
 	var restaurantId string
 	err := database.RMS.Get(&restaurantId, SQL, email)
 
@@ -51,6 +61,8 @@ func IsRestaurantExists(email string) (bool, error) {
 
 func IsRestaurantIDExists(id string) (bool, error) {
 	// language=SQL
+
+	// you need to check dish existence by using dish name and restaurant_id
 	SQL := `SELECT
 				r.id
        		FROM
@@ -58,6 +70,8 @@ func IsRestaurantIDExists(id string) (bool, error) {
 			WHERE
 				r.archived_at IS NULL
 				AND r.id = $1`
+
+	// no need of this variable
 	var restaurantId string
 	err := database.RMS.Get(&restaurantId, SQL, id)
 
@@ -296,6 +310,8 @@ func GetRestaurantDishes(restaurantID string, Filters models.DishFilters) ([]mod
 			ORDER BY $9
 			LIMIT $10
 			OFFSET $11`
+
+	// name must be in camelcase
 	Dishes := make([]models.Dishes, 0)
 	err := database.RMS.Select(&Dishes, SQL, restaurantID, Filters.CreatedBy, Filters.Name, Filters.MinQuantity, Filters.MinPrice, Filters.MaxPrice, Filters.MinDiscount, Filters.MaxDiscount, Filters.SortBy, Filters.PageSize, Filters.PageSize*Filters.PageNumber)
 	if err != nil {
@@ -435,6 +451,8 @@ func GetRestaurants(Filters models.Filters) ([]models.Restaurant, error) {
 			LIMIT $5
 			OFFSET $6`
 	Restaurant := make([]models.Restaurant, 0)
+
+	// use args... []interface
 	err := database.RMS.Select(&Restaurant, SQL, Filters.CreatedBy, Filters.Name, Filters.Email, Filters.SortBy, Filters.PageSize, Filters.PageNumber*Filters.PageSize)
 	if err != nil {
 		return nil, err

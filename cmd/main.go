@@ -40,6 +40,7 @@ func main() {
 	handler.RegisterAdmin()
 
 	go func() {
+		// user updated errors.Is() function
 		if err := srv.Run(":8080"); err != nil && err != http.ErrServerClosed {
 			logrus.Errorf("Failed to run server with error: %+v", err)
 		}

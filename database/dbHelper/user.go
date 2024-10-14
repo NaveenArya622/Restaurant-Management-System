@@ -15,6 +15,8 @@ func CreateUser(db sqlx.Ext, name, email, password string) (string, error) {
 	// language=SQL
 	SQL := `INSERT INTO users(name, email, password) VALUES ($1, TRIM(LOWER($2)), $3) RETURNING id`
 	var userID string
+
+	// use Exec()
 	if err := db.QueryRowx(SQL, name, email, password).Scan(&userID); err != nil {
 		return "", err
 	}
@@ -386,6 +388,8 @@ func GetUsers(role models.Role, Filters models.Filters) ([]models.User, error) {
 	users := make([]models.User, 0)
 
 	err := database.RMS.Select(&users, SQL, role, Filters.CreatedBy, Filters.Name, Filters.Email, Filters.SortBy, Filters.PageSize, Filters.PageSize*Filters.PageNumber)
+
+	// Select() returns nil if no rows found so no need of nested if
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

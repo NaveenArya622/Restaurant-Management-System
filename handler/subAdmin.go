@@ -156,17 +156,20 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 	if adminCtx.CurrentRole == models.RoleAdmin {
 		txErr := database.Tx(func(tx *sqlx.Tx) error {
 			if multipleRoles {
+				// pass tx also in function call
 				roleErr := dbHelper.RemoveRole(id, models.RoleUser)
 				if roleErr != nil {
 					logrus.Errorf("Failed to Remove User Role: %s", roleErr)
 					return roleErr
 				}
 			} else {
+				// pass tx also in function call
 				roleErr := dbHelper.RemoveRole(id, models.RoleUser)
 				if roleErr != nil {
 					logrus.Errorf("Failed to Remove User Role: %s", roleErr)
 					return roleErr
 				}
+				// pass tx also in function call
 				userErr := dbHelper.RemoveUser(id)
 				if userErr != nil {
 					logrus.Errorf("Failed to remove User: %s", userErr)
@@ -246,6 +249,7 @@ func OpenRestaurant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// use validator
 	if body.Name == "" {
 		logrus.Errorf("Invalid Name.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "Invalid Name")
@@ -257,41 +261,49 @@ func OpenRestaurant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// use validator
 	if len(body.Address) > 30 || len(body.Address) <= 2 {
 		logrus.Errorf("Address must be with in 2 to 30 letter.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "Address must be with in 2 to 30 letter.")
 		return
 	}
 
+	// use validator
 	if len(body.State) > 16 || len(body.State) <= 2 {
 		logrus.Errorf("State must be with in 2 to 16 letter.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "State must be with in 2 to 16 letter.")
 		return
 	}
 
+	// use validator
 	if len(body.City) > 20 || len(body.City) <= 2 {
 		logrus.Errorf("City must be with in 2 to 20 letter.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "City must be with in 2 to 20 letter.")
 		return
 	}
 
+	// use validator
 	if len(body.PinCode) != 6 {
 		logrus.Errorf("PinCode must 6 digit.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "PinCode must 6 digit.")
 		return
 	}
 
+	// use validator
 	if body.Lat > 90 || body.Lat < -90 {
 		logrus.Errorf("Invalid Latitude.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "Invalid Latitude.")
 		return
 	}
 
+	// use validator
 	if body.Lng > 180 || body.Lng < -180 {
 		logrus.Errorf("Invalid Longitude.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "Invalid Longitude.")
 		return
 	}
+
+	// no need to return restaurant id from dbhelper side in this case because you are not using it
 	_, saveErr := dbHelper.CreateRestaurant(body.Name, body.Email, adminCtx.ID, body.Address, body.State, body.City, body.PinCode, body.Lat, body.Lng)
 	if saveErr != nil {
 		logrus.Errorf("Failed to open Restaurant: %s", saveErr)

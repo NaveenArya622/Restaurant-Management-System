@@ -182,6 +182,7 @@ func RemoveSubAdmin(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, rolesErr, "Unable to get Users")
 		return
 	}
+	// you have created the transaction but not passing tx in db calls
 	txErr := database.Tx(func(tx *sqlx.Tx) error {
 		if multipleRoles {
 			roleErr := dbHelper.RemoveRole(subAdminId, models.RoleUser)

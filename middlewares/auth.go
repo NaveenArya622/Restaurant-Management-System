@@ -17,6 +17,7 @@ const (
 	userContext ContextKeys = "__userContext"
 )
 
+// need to check archived_at of the session for token invalidation
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := strings.Split(r.Header.Get("authorization"), " ")[1]
