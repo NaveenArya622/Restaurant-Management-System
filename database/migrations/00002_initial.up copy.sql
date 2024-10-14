@@ -4,7 +4,11 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS restaurants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+
+--  no need of email in restaurant table
     email TEXT NOT NULL,
+
+--  use text in place of varchar
     address VARCHAR(30) CHECK (address ~ '^[a-zA-Z0-9\s]*$'),
     state VARCHAR(16) CHECK (state ~ '^[a-zA-Z\s]*$'),
     city VARCHAR(20) CHECK (city ~ '^[a-zA-Z\s]*$'),
@@ -25,7 +29,10 @@ CREATE TABLE IF NOT EXISTS dishes (
     quantity NUMERIC NOT NULL,
     price NUMERIC NOT NULL,
     discount INT CHECK (discount BETWEEN 0 AND 100),
+
+--  no need of created_by in dish table restaurant_id is enough to identify who created the dish
     created_by UUID REFERENCES users(id),
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     archived_at TIMESTAMP WITH TIME ZONE
 );
