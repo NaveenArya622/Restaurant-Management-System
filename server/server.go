@@ -37,17 +37,16 @@ func SetupRoutes() *Server {
 				authRouts.Get("/restaurants", handler.GetRestaurants)
 				authRouts.Get("/restaurant/{restaurantId}/dishes", handler.GetRestaurantsDishes)
 				authRouts.Route("/user", func(user chi.Router) {
-					user.Use(middlewares.ShouldHaveRole(models.RoleUser))
+					user.Use(middlewares.ShouldHaveRole([]models.Role{models.RoleUser}))
 					user.Group(userRoutes)
 				})
 				authRouts.Route("/sub-admin", func(subAdmin chi.Router) {
-					subAdmin.Use(middlewares.ShouldHaveRole(models.RoleSubAdmin))
+					subAdmin.Use(middlewares.ShouldHaveRole([]models.Role{models.RoleAdmin, models.RoleSubAdmin}))
 					subAdmin.Group(subAdminRoutes)
 				})
 				authRouts.Route("/admin", func(admin chi.Router) {
-					admin.Use(middlewares.ShouldHaveRole(models.RoleAdmin))
+					admin.Use(middlewares.ShouldHaveRole([]models.Role{models.RoleAdmin}))
 					admin.Group(adminRoutes)
-					admin.Group(subAdminRoutes)
 				})
 			})
 		})

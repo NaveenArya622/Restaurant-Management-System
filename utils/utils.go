@@ -2,24 +2,25 @@ package utils
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math"
 	"math/big"
 	"net/http"
-	"os"
 	"regexp"
+	"rms/logEditor"
 	"rms/models"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gofrs/uuid"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -52,14 +53,14 @@ type clientError struct {
 func init() {
 	n, err := rand.Int(rand.Reader, big.NewInt(generatorSeed))
 	if err != nil {
-		logrus.Panicf("failed to initialize utilities with random seed, %+v", err)
+		log.Panicf("failed to initialize utilities with random seed, %+v", err)
 		return
 	}
 
 	g, err := shortid.New(1, shortid.DefaultABC, n.Uint64())
 
 	if err != nil {
-		logrus.Panicf("Failed to initialize utils package with error: %+v", err)
+		log.Panicf("Failed to initialize utils package with error: %+v", err)
 	}
 
 	generator = g
@@ -85,7 +86,7 @@ func RespondJSON(w http.ResponseWriter, statusCode int, body interface{}) {
 	w.WriteHeader(statusCode)
 	if body != nil {
 		if err := EncodeJSONBody(w, body); err != nil {
-			logrus.Errorf("Failed to respond JSON with error: %+v", err)
+			log.Errorf("Failed to respond JSON with error: %+v", err)
 		}
 	}
 }
@@ -113,30 +114,46 @@ func newClientError(err error, statusCode int, messageToUser string, additionalI
 }
 
 // RespondError sends an error message to the API caller and logs the error
-func RespondError(w http.ResponseWriter, statusCode int, err error, messageToUser string, additionalInfoForDevs ...string) {
-	logrus.Errorf("status: %d, message: %s, err: %+v ", statusCode, messageToUser, err)
+func RespondError(w http.ResponseWriter, statusCode int, err error, messageToUser string, body interface{}, additionalInfoForDevs ...string) {
+	logrus := logEditor.GetLogger()
+	logid, logErr := uuid.NewV4()
+	if logErr != nil {
+		logrus.WithFields(log.Fields{
+			"time": time.Now(),
+			"uuid": logid,
+		}).Error(logErr)
+	}
+	logrus.WithFields(log.Fields{
+		"time":        time.Now(),
+		"uuid":        logid.String(),
+		"requestBody": body,
+	}).Error("status: %d, message: %s, err: %+v ", statusCode, messageToUser, err)
 	clientError := newClientError(err, statusCode, messageToUser, additionalInfoForDevs...)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(clientError); err != nil {
-		logrus.Errorf("Failed to send error to caller with error: %+v", err)
+		logrus.WithFields(log.Fields{
+			"time":         time.Now(),
+			"uuid":         logid,
+			"requestBody":  body,
+			"responseBody": clientError,
+		}).Error("Failed to send error to caller with error: %+v", err)
 	}
 }
 
 // JwtToken generates SHA256 for a given string
-func JwtToken(userId, userRoleId string) (string, error) {
-	secretKey := []byte(os.Getenv("SESSION_KEY"))
+func JwtToken(userId, SessionKey string) (string, error) {
+	secretKey := []byte(SessionKey)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId":     userId,
-		"userRoleId": userRoleId,
-		"exp":        time.Now().Add(time.Hour).Unix(),
+		"userId": userId,
+		"exp":    time.Now().Add(time.Hour).Unix(),
 	})
 
 	return token.SignedString(secretKey)
 }
 
 // JwtToken generates SHA256 for a given string
-func ParseJwtToken(token string) error {
-	secretKey := []byte(os.Getenv("SESSION_KEY"))
+func ParseJwtToken(token, SessionKey string) error {
+	secretKey := []byte(SessionKey)
 	claims := jwt.MapClaims{}
 	// Parse the JWT token
 	jwtParse, jwtErr := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
@@ -226,30 +243,32 @@ func GetUserAddressById(addressID string, addresses []models.UserAddress) (*mode
 }
 
 // User with address
-func ImproveUsers(rows *sql.Rows) ([]models.User, error) {
-	users := make([]models.User, 0)
-	for rows.Next() {
-		var user models.User
-		var userAddressesJSON string
-		err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.CurrentRole, &userAddressesJSON)
-		if err != nil {
-			return nil, err
-		}
 
-		user.Password = "******"
-		// Parse JSON-encoded user addresses
-		var addresses []models.UserAddress
-		if err := json.Unmarshal([]byte(userAddressesJSON), &addresses); err != nil {
-			return nil, err
-		}
-		if addresses[0].ID != "" {
-			user.UserAddresses = addresses
-		}
+//no need
+// func ImproveUsers(rows *sql.Rows) ([]models.User, error) {
+// 	users := make([]models.User, 0)
+// 	for rows.Next() {
+// 		var user models.User
+// 		var userAddressesJSON string
+// 		err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.CurrentRole, &userAddressesJSON)
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-		users = append(users, user)
-	}
-	return users, nil
-}
+// 		user.Password = "******"
+// 		// Parse JSON-encoded user addresses
+// 		var addresses []models.UserAddress
+// 		if err := json.Unmarshal([]byte(userAddressesJSON), &addresses); err != nil {
+// 			return nil, err
+// 		}
+// 		if addresses[0].ID != "" {
+// 			user.UserAddresses = addresses
+// 		}
+
+// 		users = append(users, user)
+// 	}
+// 	return users, nil
+// }
 
 func UpdateUserAddress(users []models.User, addresses []models.UserAddress) ([]models.User, error) {
 	addressMap := make(map[string][]models.UserAddress)
@@ -278,10 +297,6 @@ func GetValuesFromUser(users []models.User, key string) []string {
 			values = append(values, user.Password)
 		case "CreatedAt":
 			values = append(values, user.CreatedAt.String())
-		case "CurrentRole":
-			values = append(values, string(user.CurrentRole))
-		case "RoleID":
-			values = append(values, user.RoleID)
 		default:
 			values = append(values, user.ID)
 		}
@@ -297,8 +312,6 @@ func GetUser(users []models.UserWithAddress) models.User {
 	user.Email = users[0].Email
 	user.Password = users[0].Password
 	user.CreatedAt = users[0].CreatedAt
-	user.CurrentRole = users[0].CurrentRole
-	user.RoleID = users[0].RoleID
 	for _, user := range users {
 		if len(user.Address) > 0 && len(user.State) > 0 && len(user.City) > 0 && len(user.PinCode) == 6 {
 			var address models.UserAddress

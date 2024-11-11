@@ -16,6 +16,13 @@ func (r Role) IsValid() bool {
 	return r == RoleAdmin || r == RoleSubAdmin || r == RoleUser
 }
 
+func (r Role) Contains(roles []Role) bool {
+	for _, role := range roles {
+		return role == r && r.IsValid()
+	}
+	return false
+}
+
 type SortedBy string
 
 const (
@@ -37,8 +44,8 @@ type User struct {
 	Email         string        `json:"email" db:"email"`
 	Password      string        `json:"password" db:"password"`
 	CreatedAt     time.Time     `json:"createdAt" db:"created_at"`
-	CurrentRole   Role          `json:"currentRole" db:"user_current_role"`
-	RoleID        string        `json:"-" db:"role_id"`
+	CurrentRole   Role          `json:"-" db:"user_current_role"`
+	Roles         []Role        `json:"-" db:"roles"`
 	UserAddresses []UserAddress `json:"Addresses" db:"user_addresses"`
 }
 
@@ -48,8 +55,8 @@ type UserWithAddress struct {
 	Email            string    `json:"email" db:"email"`
 	Password         string    `json:"password" db:"password"`
 	CreatedAt        time.Time `json:"createdAt" db:"created_at"`
-	CurrentRole      Role      `json:"currentRole" db:"user_current_role"`
-	RoleID           string    `json:"-" db:"role_id"`
+	Roles            []Role    `json:"-" db:"roles"`
+	CurrentRole      Role      `json:"-" db:"user_current_role"`
 	AddressID        string    `json:"addressId" db:"address_id"`
 	Address          string    `json:"address" db:"address"`
 	State            string    `json:"state" db:"state"`
@@ -97,7 +104,6 @@ type Login struct {
 type LoginBody struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Role     Role   `json:"role"`
 }
 
 type GetSubAdmins struct {

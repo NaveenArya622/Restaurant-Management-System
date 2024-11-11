@@ -32,10 +32,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_role ON user_roles(user_id, role_name) 
 -- User Session Table
 CREATE TABLE IF NOT EXISTS user_session (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_role_id UUID REFERENCES user_roles(id) NOT NULL,
     user_id UUID REFERENCES users(id) NOT NULL,
     session_token TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    archived_at TIMESTAMP WITH TIME ZONE
 );
 
 -- User Address Table

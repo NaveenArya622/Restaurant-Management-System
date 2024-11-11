@@ -8,6 +8,7 @@
 /dataSources.local.xml
 
 # Binaries for programs and plugins
+*.log
 *.exe
 *.exe~
 *.dll

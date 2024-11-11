@@ -92,6 +92,14 @@ func IsAnyRoleExist(role models.Role) (bool, error) {
 	return isUserRoleId, nil
 }
 
+func GetUserRoles(userID string) ([]models.Role, error) {
+	// language=SQL
+	SQL := `SELECT role_name FROM user_roles WHERE user_id = $1 AND archived_at IS NULL`
+	roles := make([]models.Role, 0)
+	err := database.RMS.Select(&roles, SQL, userID)
+	return roles, err
+}
+
 // todo address will be fetched in this single query not any other db call **done**
 func GetUserBySession(sessionToken string) (*models.User, error) {
 	// language=SQL
@@ -101,7 +109,6 @@ func GetUserBySession(sessionToken string) (*models.User, error) {
        			u.email,
 				'********' AS password,
        			u.created_at,
-				ucr.role_name AS user_current_role,
 				COALESCE(ua.id,gen_random_uuid()) AS address_id,
 				COALESCE(ua.address,'') AS address,
 				COALESCE(ua.state,'') AS state,
@@ -112,9 +119,10 @@ func GetUserBySession(sessionToken string) (*models.User, error) {
 				COALESCE(ua.created_at,now()) AS address_created_at
 			FROM users u
 			JOIN user_session us on u.id = us.user_id
-			JOIN user_roles ucr on us.user_role_id = ucr.id
+			JOIN user_roles ur on u.id = ur.user_id
 			LEFT JOIN user_address ua on u.id = ua.user_id
-			WHERE u.archived_at IS NULL AND ucr.archived_at IS NULL AND us.session_token = $1`
+			WHERE u.archived_at IS NULL AND ur.archived_at IS NULL AND us.session_token = $1
+			GROUP BY ua.id,u.id`
 	var users []models.UserWithAddress
 	err := database.RMS.Select(&users, SQL, sessionToken)
 
@@ -123,6 +131,11 @@ func GetUserBySession(sessionToken string) (*models.User, error) {
 		return nil, err
 	}
 	user := utils.GetUser(users)
+	user.Roles, err = GetUserRoles(user.ID)
+	if err != nil {
+		//todo :- I think this condition is unnecessary because you will be return same error mag in both case **done**
+		return nil, err
+	}
 	return &user, nil
 }
 
@@ -146,40 +159,38 @@ func UserHaveMultipleRoles(id string) (bool, error) {
 	return multipleRoles, nil
 }
 
-func CreateUserSession(db sqlx.Ext, userID, userRoleId, sessionToken string) error {
+func CreateUserSession(db sqlx.Ext, userID, sessionToken string) error {
 	// language=SQL
-	SQL := `INSERT INTO user_session(user_id, user_role_id, session_token) VALUES ($1, $2, $3)`
-	_, err := db.Exec(SQL, userID, userRoleId, sessionToken)
+	SQL := `INSERT INTO user_session(user_id, session_token) VALUES ($1, $2)`
+	_, err := db.Exec(SQL, userID, sessionToken)
 	return err
 }
 
-func GetUserRoleIDByPassword(email, password string, role models.Role) (string, string, error) {
+func GetUserIDByPassword(email, password string) (string, error) {
 	// language=SQL
 	SQL := `SELECT
 				u.id,
-				ur.id as role_id,
        			u.password
        		FROM
 				users u JOIN user_roles ur on u.id = ur.user_id
 			WHERE
 				u.archived_at IS NULL
 				AND ur.archived_at IS NULL
-				AND u.email = TRIM(LOWER($1))
-				AND ur.role_name = $2`
+				AND u.email = TRIM(LOWER($1))`
 	var user models.User
-	err := database.RMS.Get(&user, SQL, email, role)
+	err := database.RMS.Get(&user, SQL, email)
 	if err != nil {
 		//TODO:- remove if condition **DONE**
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", "", err
+			return "", nil
 		}
-		return "", "", err
+		return "", err
 	}
 	// compare password
 	if passwordErr := utils.CheckPassword(password, user.Password); passwordErr != nil {
-		return "", "", passwordErr
+		return "", passwordErr
 	}
-	return user.ID, user.RoleID, nil
+	return user.ID, nil
 }
 
 func DeleteSessionToken(token string) error {
