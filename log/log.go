@@ -56,7 +56,7 @@ func (logger *loggerStruct) InfoWithContext(context context.Context, args ...int
 }
 
 func (logger *loggerStruct) Info(args ...interface{}) {
-	logger.Info(args...)
+	logger.Log(logrus.InfoLevel, args...)
 }
 
 func (logger *loggerStruct) WarnWithContext(context context.Context, args ...interface{}) {
@@ -64,7 +64,7 @@ func (logger *loggerStruct) WarnWithContext(context context.Context, args ...int
 }
 
 func (logger *loggerStruct) Warn(args ...interface{}) {
-	logger.Warn(args...)
+	logger.Log(logrus.WarnLevel, args...)
 }
 
 func (logger *loggerStruct) ErrorWithContext(context context.Context, args ...interface{}) {
@@ -72,7 +72,7 @@ func (logger *loggerStruct) ErrorWithContext(context context.Context, args ...in
 }
 
 func (logger *loggerStruct) Error(args ...interface{}) {
-	logger.Error(args...)
+	logger.Log(logrus.ErrorLevel, args...)
 }
 
 func (logger *loggerStruct) FatalWithContext(context context.Context, args ...interface{}) {
@@ -80,7 +80,7 @@ func (logger *loggerStruct) FatalWithContext(context context.Context, args ...in
 }
 
 func (logger *loggerStruct) Fatal(args ...interface{}) {
-	logger.Fatal(args...)
+	logger.Log(logrus.FatalLevel, args...)
 }
 
 func (logger *loggerStruct) WithField(key string, value interface{}) *entry {
@@ -100,7 +100,7 @@ func (e *entry) DebugWithContext(context context.Context, args ...interface{}) {
 }
 
 func (e *entry) Debug(args ...interface{}) {
-	e.Debug(args...)
+	e.Log(logrus.DebugLevel, args...)
 }
 
 func (e *entry) InfoWithContext(context context.Context, args ...interface{}) {
@@ -116,7 +116,7 @@ func (e *entry) WarnWithContext(context context.Context, args ...interface{}) {
 }
 
 func (e *entry) Warn(args ...interface{}) {
-	e.Warn(args...)
+	e.Log(logrus.WarnLevel, args...)
 }
 
 func (e *entry) ErrorWithContext(context context.Context, args ...interface{}) {
@@ -124,7 +124,7 @@ func (e *entry) ErrorWithContext(context context.Context, args ...interface{}) {
 }
 
 func (e *entry) Error(args ...interface{}) {
-	e.Error(args...)
+	e.Log(logrus.ErrorLevel, args...)
 }
 
 func (e *entry) FatalWithContext(context context.Context, args ...interface{}) {
@@ -132,5 +132,5 @@ func (e *entry) FatalWithContext(context context.Context, args ...interface{}) {
 }
 
 func (e *entry) Fatal(args ...interface{}) {
-	e.Fatal(args...)
+	e.Log(logrus.FatalLevel, args...)
 }
