@@ -14,7 +14,6 @@ import (
 
 	// load pq as database driver
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -77,12 +76,12 @@ func Tx(fn func(tx *sqlx.Tx) error) error {
 	defer func() {
 		if err != nil {
 			if rollBackErr := tx.Rollback(); rollBackErr != nil {
-				logrus.Errorf("failed to rollback tx: %s", rollBackErr)
+				log.Logger.Errorf("failed to rollback tx: %s", rollBackErr)
 			}
 			return
 		}
 		if commitErr := tx.Commit(); commitErr != nil {
-			logrus.Errorf("failed to commit tx: %s", commitErr)
+			log.Logger.Errorf("failed to commit tx: %s", commitErr)
 		}
 	}()
 	err = fn(tx)

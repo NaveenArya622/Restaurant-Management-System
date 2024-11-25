@@ -3,7 +3,6 @@ package configuration
 import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -23,15 +22,15 @@ func GetConfig() (Config, error) {
 	// Load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
-		logrus.Fatal("Error loading .env file")
+		log.Logger.Fatal("Error loading .env file")
 	}
 
 	// Process environment variables
 	err = envconfig.Process("", &config)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Logger.Fatal(err)
 	}
 
-	logrus.Printf("Config: %+v\n", config)
+	log.Logger.Printf("Config: %+v\n", config)
 	return config, err
 }

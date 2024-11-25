@@ -8,7 +8,7 @@ import (
 	"rms/configuration"
 	"rms/database"
 	"rms/handler"
-	"rms/logEditor"
+	"rms/log"
 	"rms/server"
 	"syscall"
 	"time"
@@ -20,17 +20,17 @@ import (
 const shutDownTimeOut = 10 * time.Second
 
 func main() {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	config, err := configuration.GetConfig()
 	logid, logErr := uuid.NewV4()
 	if err != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error("Error loading .env file")
 	}
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -48,13 +48,13 @@ func main() {
 		config.DBUser,
 		config.DBPassword,
 		database.SSLModeDisable); err != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
 		}).Fatal("Failed to initialize and migrate database with error: %+v", err)
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": config,
@@ -63,14 +63,14 @@ func main() {
 
 	go func() {
 		if err := srv.Run(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logrus.WithFields(log.Fields{
+			log.Logger.WithFields(log.Fields{
 				"time":        time.Now(),
 				"uuid":        logid.String(),
 				"requestBody": config,
 			}).Error("Failed to run server with error: %+v", err)
 		}
 	}()
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": config,
@@ -78,13 +78,13 @@ func main() {
 
 	<-done
 
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": config,
 	}).Info("shutting down server")
 	if err := database.ShutdownDatabase(); err != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"data":        err,
@@ -92,12 +92,12 @@ func main() {
 		}).Error("failed to close database connection")
 	}
 	if err := srv.Shutdown(shutDownTimeOut); err != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"data":        err,
 			"requestBody": config,
 		}).Panic("failed to gracefully shutdown server")
 	}
-	logEditor.Close()
+	log.Close()
 }

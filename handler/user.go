@@ -5,7 +5,7 @@ import (
 	"rms/configuration"
 	"rms/database"
 	"rms/database/dbHelper"
-	"rms/logEditor"
+	"rms/log"
 	"rms/middlewares"
 	"rms/models"
 	"rms/utils"
@@ -19,11 +19,11 @@ import (
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -33,14 +33,14 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var body models.LoginBody
 
 	if parseErr := utils.ParseBody(r.Body, &body); parseErr != nil {
-		logrus.Errorf("Failed to parse request body: %s", parseErr)
+		log.Logger.Errorf("Failed to parse request body: %s", parseErr)
 		utils.RespondError(w, http.StatusBadRequest, parseErr, "Failed to parse request body", r.Body)
 		return
 	}
 
 	config, err := configuration.GetConfig()
 	if err != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": body,
@@ -65,7 +65,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//TODO useErrof instead of printf because we have logging error  not an info level **DONE**
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -84,18 +84,15 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 func GetInfo(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
-			"time": time.Now(),
+		log.Logger.WithFields(log.Fields{
 			"uuid": logid,
 		}).Error(logErr)
 	}
 	userCtx := middlewares.UserContext(r)
-	logrus.WithFields(log.Fields{
-		"time": time.Now(),
-		"uuid": logid,
+	log.logger.WithFields(log.Fields{
 		"responseBody": models.GetUser{
 			Message: "Get information Successfully.",
 			User:    *userCtx,
@@ -109,10 +106,10 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -123,7 +120,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Failed to logout user", "")
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time": time.Now(),
 		"uuid": logid,
 		"responseBody": models.Message{
@@ -138,17 +135,17 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 // todo :- use validator package to validate empty string or not in case if any entry of updating is empty then we should return not update the existing details because updating paylload is not valid
 func UpdateSelfInfo(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
 	}
 	var body models.RegisterUserBody
 
-	adminCtx := middlewares.UserContext(r)
+	userContext := middlewares.UserContext(r)
 	if parseErr := utils.ParseBody(r.Body, &body); parseErr != nil {
 		utils.RespondError(w, http.StatusBadRequest, parseErr, "Failed to parse request body", r.Body)
 		return
@@ -172,12 +169,12 @@ func UpdateSelfInfo(w http.ResponseWriter, r *http.Request) {
 		}
 		body.Password = hashedPassword
 	}
-	err := dbHelper.UpdateUserInfo(adminCtx.ID, body.Name, body.Email, body.Password)
+	err := dbHelper.UpdateUserInfo(r.Context(), userContext.ID, body.Name, body.Email, body.Password)
 	if err != nil {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Failed update User", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -192,10 +189,10 @@ func UpdateSelfInfo(w http.ResponseWriter, r *http.Request) {
 
 func AddAddress(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -241,7 +238,7 @@ func AddAddress(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, addressErr, "Failed to create Address", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -256,10 +253,10 @@ func AddAddress(w http.ResponseWriter, r *http.Request) {
 
 func UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -307,7 +304,7 @@ func UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Failed to update Address:", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -324,10 +321,10 @@ func UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 func GetRestaurantDistance(w http.ResponseWriter, r *http.Request) {
 
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -349,7 +346,7 @@ func GetRestaurantDistance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Distance, Unit := utils.CalculateDistance(userAddress.Lat, userAddress.Lng, Restaurant.Lat, Restaurant.Lng)
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":          time.Now(),
 		"uuid":          logid,
 		"requestParams": r.URL.Query(),

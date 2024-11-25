@@ -1,6 +1,7 @@
 package dbHelper
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"rms/database"
@@ -260,7 +261,7 @@ func IsUserExists(email string) (string, error) {
 	return userId, nil
 }
 
-func UpdateUserInfo(userID, newName, newEmail, newPassword string) error {
+func UpdateUserInfo(c context.Context, userID, newName, newEmail, newPassword string) error {
 	arguments := []interface{}{
 		newName,
 		newEmail,
@@ -273,7 +274,7 @@ func UpdateUserInfo(userID, newName, newEmail, newPassword string) error {
 			email = TRIM(LOWER($2)),
 			password = $3
 		WHERE id = $4`
-	_, err := database.RMS.Exec(SQL, arguments...)
+	_, err := database.RMS.ExecContext(c, SQL, arguments...)
 	return err
 }
 

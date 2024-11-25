@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"math/big"
 	"net/http"
 	"regexp"
-	"rms/logEditor"
+	"rms/log"
 	"rms/models"
 	"strconv"
 	"strings"
@@ -19,7 +20,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
 	"golang.org/x/crypto/bcrypt"
@@ -83,6 +83,27 @@ func EncodeJSONBody(resp http.ResponseWriter, data interface{}) error {
 
 // RespondJSON sends the interface as a JSON
 func RespondJSON(w http.ResponseWriter, statusCode int, body interface{}) {
+	log.Logger.WithFields(log.Fields{
+		"time": time.Now(),
+		"uuid": logid,
+		"responseBody": models.GetSubAdmins{
+			Message:    "Get subAdmin successfully.",
+			SubAdmins:  subAdmins,
+			TotalCount: subAdminsCount,
+			PageSize:   Filters.PageSize,
+			PageNumber: Filters.PageNumber,
+		},
+	}).Info("Get subAdmin successfully.")
+	w.WriteHeader(statusCode)
+	if body != nil {
+		if err := EncodeJSONBody(w, body); err != nil {
+			log.Errorf("Failed to respond JSON with error: %+v", err)
+		}
+	}
+}
+
+func RespondJSONWithContext(c context.Context, w http.ResponseWriter, statusCode int, body interface{}) {
+	log.Logger.InfoWithContext(c, "Get subAdmin successfully. %+v", body)
 	w.WriteHeader(statusCode)
 	if body != nil {
 		if err := EncodeJSONBody(w, body); err != nil {
@@ -115,15 +136,15 @@ func newClientError(err error, statusCode int, messageToUser string, additionalI
 
 // RespondError sends an error message to the API caller and logs the error
 func RespondError(w http.ResponseWriter, statusCode int, err error, messageToUser string, body interface{}, additionalInfoForDevs ...string) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -131,7 +152,7 @@ func RespondError(w http.ResponseWriter, statusCode int, err error, messageToUse
 	clientError := newClientError(err, statusCode, messageToUser, additionalInfoForDevs...)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(clientError); err != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":         time.Now(),
 			"uuid":         logid,
 			"requestBody":  body,
@@ -160,7 +181,7 @@ func ParseJwtToken(token, SessionKey string) error {
 		return secretKey, nil
 	})
 	if jwtErr != nil {
-		logrus.WithError(jwtErr).Errorf("failed parse JWT: %s", token)
+		log.Logger.WithError(jwtErr).Errorf("failed parse JWT: %s", token)
 		return jwtErr
 	}
 	if jwtParse != nil {
@@ -345,7 +366,7 @@ func GetFilters(r *http.Request) models.Filters {
 	} else {
 		Filters.PageSize = 10
 	}
-	logrus.Printf("PageNumber: %d,PageSize: %d", Filters.PageNumber, Filters.PageSize)
+	log.Logger.Printf("PageNumber: %d,PageSize: %d", Filters.PageNumber, Filters.PageSize)
 	Name := r.URL.Query().Get("name")
 	Filters.Name = Name
 	Email := r.URL.Query().Get("email")
@@ -413,7 +434,7 @@ func GetDishFilters(r *http.Request) models.DishFilters {
 	} else {
 		Filters.MinDiscount = 1
 	}
-	logrus.Printf("PageNumber: %d,PageSize: %d", PageNumber, PageSize)
+	log.Logger.Printf("PageNumber: %d,PageSize: %d", PageNumber, PageSize)
 	Name := r.URL.Query().Get("name")
 	Filters.Name = Name
 	CreatedBy := r.URL.Query().Get("createdBy")

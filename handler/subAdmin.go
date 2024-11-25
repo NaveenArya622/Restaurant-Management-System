@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"rms/database"
 	"rms/database/dbHelper"
-	"rms/logEditor"
+	"rms/log"
 	"rms/middlewares"
 	"rms/models"
 	"rms/utils"
@@ -18,10 +18,10 @@ import (
 )
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -66,18 +66,18 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		if len(userID) > 0 {
 			roleErr := dbHelper.CreateUserRole(tx, userID, subAdminCtx.ID, models.RoleUser)
 			if roleErr != nil {
-				logrus.Errorf("Failed to create User Role: %s", roleErr)
+				log.Logger.Errorf("Failed to create User Role: %s", roleErr)
 				return roleErr
 			}
 		} else {
 			userID, saveErr := dbHelper.CreateUser(tx, body.Name, body.Email, hashedPassword)
 			if saveErr != nil {
-				logrus.Errorf("Failed to create User: %s", saveErr)
+				log.Logger.Errorf("Failed to create User: %s", saveErr)
 				return saveErr
 			}
 			roleErr := dbHelper.CreateUserRole(tx, userID, subAdminCtx.ID, models.RoleUser)
 			if roleErr != nil {
-				logrus.Errorf("Failed to failed to create User Role: %s", roleErr)
+				log.Logger.Errorf("Failed to failed to create User Role: %s", roleErr)
 				return roleErr
 			}
 		}
@@ -87,7 +87,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, txErr, "Failed to create user", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -101,17 +101,17 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
 	}
 	Filters := utils.GetFilters(r)
 	if Filters.Email != "" && !utils.IsEmailValid(Filters.Email) {
-		logrus.Errorf("Invalid Filter Email.")
+		log.Logger.Errorf("Invalid Filter Email.")
 		utils.RespondError(w, http.StatusExpectationFailed, nil, "Invalid Filter Email.", Filters)
 		return
 	}
@@ -124,7 +124,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			var err error
 			userCount, err = dbHelper.GetUserCount(models.RoleUser, Filters)
 			if err != nil {
-				logrus.Errorf("Unable to get Users Count: %s", err)
+				log.Logger.Errorf("Unable to get Users Count: %s", err)
 			}
 			return err
 		})
@@ -132,7 +132,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			var err error
 			users, err = dbHelper.GetUsers(models.RoleUser, Filters)
 			if err != nil {
-				logrus.Errorf("Unable to get Users: %s", err)
+				log.Logger.Errorf("Unable to get Users: %s", err)
 			}
 			return err
 		})
@@ -141,7 +141,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			var err error
 			userCount, err = dbHelper.GetUserCountByAdminID(adminCtx.ID, models.RoleUser, Filters)
 			if err != nil {
-				logrus.Errorf("Unable to get Users Count: %s", err)
+				log.Logger.Errorf("Unable to get Users Count: %s", err)
 			}
 			return err
 		})
@@ -149,7 +149,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			var err error
 			users, err = dbHelper.GetUsersByAdminID(adminCtx.ID, models.RoleUser, Filters)
 			if err != nil {
-				logrus.Errorf("Unable to get Users: %s", err)
+				log.Logger.Errorf("Unable to get Users: %s", err)
 			}
 			return err
 		})
@@ -158,7 +158,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Unable to get Users", Filters)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": Filters,
@@ -181,10 +181,10 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 // todo :- remove user details also **DONE**
 func RemoveUser(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -194,7 +194,7 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 	adminCtx := middlewares.UserContext(r)
 	multipleRoles, rolesErr := dbHelper.UserHaveMultipleRoles(id)
 	if rolesErr != nil {
-		logrus.Errorf("Unable to get Users: %s", rolesErr)
+		log.Logger.Errorf("Unable to get Users: %s", rolesErr)
 		utils.RespondError(w, http.StatusInternalServerError, rolesErr, "Unable to get Users", "UID: "+id)
 		return
 	}
@@ -203,25 +203,25 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 			if multipleRoles {
 				roleErr := dbHelper.RemoveRole(tx, id, models.RoleUser)
 				if roleErr != nil {
-					logrus.Errorf("Failed to Remove User Role: %s", roleErr)
+					log.Logger.Errorf("Failed to Remove User Role: %s", roleErr)
 					return roleErr
 				}
 			} else {
 				roleErr := dbHelper.RemoveRole(tx, id, models.RoleUser)
 				if roleErr != nil {
-					logrus.Errorf("Failed to Remove User Role: %s", roleErr)
+					log.Logger.Errorf("Failed to Remove User Role: %s", roleErr)
 					return roleErr
 				}
 				userErr := dbHelper.RemoveUser(tx, id)
 				if userErr != nil {
-					logrus.Errorf("Failed to remove User: %s", userErr)
+					log.Logger.Errorf("Failed to remove User: %s", userErr)
 					return userErr
 				}
 			}
 			return nil
 		})
 		if txErr != nil {
-			logrus.Errorf("Failed to create user: %s", txErr)
+			log.Logger.Errorf("Failed to create user: %s", txErr)
 			utils.RespondError(w, http.StatusInternalServerError, txErr, "Failed to create user", "UID: "+id)
 			return
 		}
@@ -230,30 +230,30 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 			if multipleRoles {
 				saveErr := dbHelper.RemoveRoleByAdminID(tx, id, adminCtx.ID, models.RoleUser)
 				if saveErr != nil {
-					logrus.Errorf("Failed to parse request body: %s", saveErr)
+					log.Logger.Errorf("Failed to parse request body: %s", saveErr)
 					return saveErr
 				}
 			} else {
 				saveErr := dbHelper.RemoveRoleByAdminID(tx, id, adminCtx.ID, models.RoleUser)
 				if saveErr != nil {
-					logrus.Errorf("Failed to parse request body: %s", saveErr)
+					log.Logger.Errorf("Failed to parse request body: %s", saveErr)
 					return saveErr
 				}
 				roleErr := dbHelper.RemoveUser(tx, id)
 				if roleErr != nil {
-					logrus.Errorf("Failed to parse request body: %s", roleErr)
+					log.Logger.Errorf("Failed to parse request body: %s", roleErr)
 					return roleErr
 				}
 			}
 			return nil
 		})
 		if txErr != nil {
-			logrus.Errorf("Failed to create user: %s", txErr)
+			log.Logger.Errorf("Failed to create user: %s", txErr)
 			utils.RespondError(w, http.StatusInternalServerError, txErr, "Failed to create user", "UID: "+id)
 			return
 		}
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":         time.Now(),
 		"uuid":         logid,
 		"requestBBody": "UID: " + id,
@@ -269,10 +269,9 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 // Restaurant
 
 func OpenRestaurant(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -343,7 +342,7 @@ func OpenRestaurant(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, saveErr, "Failed to open Restaurant", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -357,10 +356,10 @@ func OpenRestaurant(w http.ResponseWriter, r *http.Request) {
 }
 
 func CloseRestaurant(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -377,7 +376,7 @@ func CloseRestaurant(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Unable to get Restaurant", "restaurantId: "+id)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time": time.Now(),
 		"uuid": logid,
 		"responseBody": models.Message{
@@ -390,17 +389,17 @@ func CloseRestaurant(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetRestaurants(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
 	}
 	Filters := utils.GetFilters(r)
 	if Filters.Email != "" && !utils.IsEmailValid(Filters.Email) {
-		logrus.Errorf("Invalid Restaurants Filter Email.")
+		log.Logger.Errorf("Invalid Restaurants Filter Email.")
 		utils.RespondError(w, http.StatusInternalServerError, nil, "Invalid Restaurants Filter Email.", Filters)
 		return
 	}
@@ -413,26 +412,26 @@ func GetRestaurants(w http.ResponseWriter, r *http.Request) {
 		errGroup.Go(func() error {
 			var err error
 			RestaurantsCount, err = dbHelper.GetRestaurantsCount(Filters)
-			logrus.Errorf("Unable to get Restaurants Count: %s", err)
+			log.Logger.Errorf("Unable to get Restaurants Count: %s", err)
 			return err
 		})
 		errGroup.Go(func() error {
 			var err error
 			Restaurants, err = dbHelper.GetRestaurants(Filters)
-			logrus.Errorf("Unable to get Restaurants: %s", err)
+			log.Logger.Errorf("Unable to get Restaurants: %s", err)
 			return err
 		})
 	} else {
 		errGroup.Go(func() error {
 			var err error
 			RestaurantsCount, err = dbHelper.GetRestaurantsCountByUserID(adminCtx.ID, Filters)
-			logrus.Errorf("Unable to get Restaurants Count: %s", err)
+			log.Logger.Errorf("Unable to get Restaurants Count: %s", err)
 			return err
 		})
 		errGroup.Go(func() error {
 			var err error
 			Restaurants, err = dbHelper.GetRestaurantsByUserID(adminCtx.ID, Filters)
-			logrus.Errorf("Unable to get Restaurants: %s", err)
+			log.Logger.Errorf("Unable to get Restaurants: %s", err)
 			return err
 		})
 	}
@@ -441,7 +440,7 @@ func GetRestaurants(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//TODO  write this  message below else one time **DONE**
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": Filters,
@@ -463,10 +462,10 @@ func GetRestaurants(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateRestaurant(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -535,7 +534,7 @@ func UpdateRestaurant(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Failed to update Restaurant", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -551,10 +550,10 @@ func UpdateRestaurant(w http.ResponseWriter, r *http.Request) {
 // Restaurant Dishes
 
 func AddRestaurantDish(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -607,7 +606,7 @@ func AddRestaurantDish(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, saveErr, "Failed to add Restaurant Dish.", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -621,10 +620,10 @@ func AddRestaurantDish(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateDish(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -680,7 +679,7 @@ func UpdateDish(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Failed to update Restaurant Dish", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -694,10 +693,10 @@ func UpdateDish(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveDish(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -718,7 +717,7 @@ func RemoveDish(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": "restaurantId: " + restaurantId + "dishId: " + dishId,
@@ -732,10 +731,10 @@ func RemoveDish(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetRestaurantsDishes(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -754,7 +753,7 @@ func GetRestaurantsDishes(w http.ResponseWriter, r *http.Request) {
 			utils.RespondError(w, http.StatusInternalServerError, err, "Failed to get Restaurant Dishes", Filters)
 			return
 		}
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": Filters,
@@ -784,7 +783,7 @@ func GetRestaurantsDishes(w http.ResponseWriter, r *http.Request) {
 			utils.RespondError(w, http.StatusInternalServerError, err, "Failed to get Restaurant Dish", Filters)
 			return
 		}
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": Filters,

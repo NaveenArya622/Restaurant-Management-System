@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
-	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -25,7 +24,10 @@ func CommonMiddlewares() chi.Middlewares {
 		func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add("Content-Type", "application/json")
+
+				// request
 				next.ServeHTTP(w, r)
+				// response
 			})
 		},
 		corsOptions().Handler,
@@ -34,7 +36,7 @@ func CommonMiddlewares() chi.Middlewares {
 				defer func() {
 					err := recover()
 					if err != nil {
-						logrus.Errorf("Request Panic err: %v", err)
+						log.Logger.Errorf("Request Panic err: %v", err)
 						jsonBody, _ := json.Marshal(map[string]string{
 							"error": "There was an internal server error",
 						})
@@ -42,7 +44,7 @@ func CommonMiddlewares() chi.Middlewares {
 						w.WriteHeader(http.StatusInternalServerError)
 						_, err := w.Write(jsonBody)
 						if err != nil {
-							logrus.Errorf("Failed to send response from middleware with error: %+v", err)
+							log.Logger.Errorf("Failed to send response from middleware with error: %+v", err)
 						}
 					}
 				}()

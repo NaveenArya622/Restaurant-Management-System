@@ -5,7 +5,7 @@ import (
 	"rms/configuration"
 	"rms/database"
 	"rms/database/dbHelper"
-	"rms/logEditor"
+	"rms/log"
 	"rms/middlewares"
 	"rms/models"
 	"rms/utils"
@@ -14,19 +14,18 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
 
 func RegisterSubAdmin(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
-	logid, logErr := uuid.NewV4()
-	if logErr != nil {
-		logrus.WithFields(log.Fields{
-			"time": time.Now(),
-			"uuid": logid,
-		}).Error(logErr)
-	}
+	//logrus := log.GetLogger()
+	//logid, logErr := uuid.NewV4()
+	//if logErr != nil {
+	//	log.Logger.WithFields(log.Fields{
+	//		"time": time.Now(),
+	//		"uuid": logid,
+	//	}).Error(logErr)
+	//}
 	var body models.RegisterUserBody
 	adminCtx := middlewares.UserContext(r)
 	if parseErr := utils.ParseBody(r.Body, &body); parseErr != nil {
@@ -66,29 +65,29 @@ func RegisterSubAdmin(w http.ResponseWriter, r *http.Request) {
 		if len(userID) > 0 {
 			roleErr := dbHelper.CreateUserRole(tx, userID, adminCtx.ID, models.RoleSubAdmin)
 			if roleErr != nil {
-				logrus.Errorf("Failed to create User Role: %s", roleErr)
+				log.Logger.Errorf("Failed to create User Role: %s", roleErr)
 				return roleErr
 			}
 		} else {
 			userID, saveErr := dbHelper.CreateUser(tx, body.Name, body.Email, hashedPassword)
 			if saveErr != nil {
-				logrus.Errorf("Failed to Save Sub-Admin: %s", saveErr)
+				log.Logger.Errorf("Failed to Save Sub-Admin: %s", saveErr)
 				return saveErr
 			}
 			roleErr := dbHelper.CreateUserRole(tx, userID, adminCtx.ID, models.RoleSubAdmin)
 			if roleErr != nil {
-				logrus.Errorf("Failed to create User Role: %s", roleErr)
+				log.Logger.Errorf("Failed to create User Role: %s", roleErr)
 				return roleErr
 			}
 		}
 		return nil
 	})
 	if txErr != nil {
-		logrus.Errorf("Failed to create SubAdmin: %s", txErr)
+		log.Logger.Errorf("Failed to create SubAdmin: %s", txErr)
 		utils.RespondError(w, http.StatusInternalServerError, txErr, "Failed to create user", body)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": body,
@@ -102,14 +101,14 @@ func RegisterSubAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSubAdmins(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
-	logid, logErr := uuid.NewV4()
-	if logErr != nil {
-		logrus.WithFields(log.Fields{
-			"time": time.Now(),
-			"uuid": logid,
-		}).Error(logErr)
-	}
+	//logrus := log.GetLogger()
+	//logid, logErr := uuid.NewV4()
+	//if logErr != nil {
+	//	log.Logger.WithFields(log.Fields{
+	//		"time": time.Now(),
+	//		"uuid": logid,
+	//	}).Error(logErr)
+	//}
 	Filters := utils.GetFilters(r)
 	if Filters.Email != "" && !utils.IsEmailValid(Filters.Email) {
 		utils.RespondError(w, http.StatusNotAcceptable, nil, "Invalid Filter Email.", Filters)
@@ -122,7 +121,7 @@ func GetSubAdmins(w http.ResponseWriter, r *http.Request) {
 		var err error
 		subAdminsCount, err = dbHelper.GetUserCount(models.RoleSubAdmin, Filters)
 		if err != nil {
-			logrus.Errorf("Unable to get Users Sub-Admin: %s", err)
+			log.Logger.Errorf("Unable to get Users Sub-Admin: %s", err)
 		}
 		return err
 	})
@@ -130,7 +129,7 @@ func GetSubAdmins(w http.ResponseWriter, r *http.Request) {
 		var err error
 		subAdmins, err = dbHelper.GetUsers(models.RoleSubAdmin, Filters)
 		if err != nil {
-			logrus.Errorf("Unable to get Sub-Admin: %s", err)
+			log.Logger.Errorf("Unable to get Sub-Admin: %s", err)
 		}
 		return err
 	})
@@ -138,17 +137,7 @@ func GetSubAdmins(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, err, "Unable to get subAdmin", Filters)
 		return
 	}
-	logrus.WithFields(log.Fields{
-		"time": time.Now(),
-		"uuid": logid,
-		"responseBody": models.GetSubAdmins{
-			Message:    "Get subAdmin successfully.",
-			SubAdmins:  subAdmins,
-			TotalCount: subAdminsCount,
-			PageSize:   Filters.PageSize,
-			PageNumber: Filters.PageNumber,
-		},
-	}).Info("Get subAdmin successfully.")
+
 	utils.RespondJSON(w, http.StatusOK, models.GetSubAdmins{
 		Message:    "Get subAdmin successfully.",
 		SubAdmins:  subAdmins,
@@ -159,17 +148,9 @@ func GetSubAdmins(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterAdmin(config configuration.Config) {
-	logrus := logEditor.GetLogger()
-	logid, logErr := uuid.NewV4()
-	if logErr != nil {
-		logrus.WithFields(log.Fields{
-			"time": time.Now(),
-			"uuid": logid,
-		}).Error(logErr)
-	}
 	adminExist, adminErr := dbHelper.IsAnyRoleExist(models.RoleAdmin)
 	if adminErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
@@ -177,7 +158,7 @@ func RegisterAdmin(config configuration.Config) {
 		return
 	}
 	if adminExist {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
@@ -186,7 +167,7 @@ func RegisterAdmin(config configuration.Config) {
 	}
 	exists, existsErr := dbHelper.IsUserRoleExists(config.AdminEmail, models.RoleAdmin)
 	if existsErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
@@ -194,7 +175,7 @@ func RegisterAdmin(config configuration.Config) {
 		return
 	}
 	if exists {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
@@ -203,7 +184,7 @@ func RegisterAdmin(config configuration.Config) {
 	}
 	hashedPassword, hasErr := utils.HashPassword(config.AdminFirstPassword)
 	if hasErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
@@ -212,7 +193,7 @@ func RegisterAdmin(config configuration.Config) {
 	}
 	userID, userExistsErr := dbHelper.IsUserExists(config.AdminEmail)
 	if userExistsErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
@@ -223,7 +204,7 @@ func RegisterAdmin(config configuration.Config) {
 		if len(userID) > 0 {
 			roleErr := dbHelper.CreateUserRole(tx, userID, userID, models.RoleAdmin)
 			if roleErr != nil {
-				logrus.WithFields(log.Fields{
+				log.Logger.WithFields(log.Fields{
 					"time":        time.Now(),
 					"uuid":        logid.String(),
 					"requestBody": config,
@@ -233,7 +214,7 @@ func RegisterAdmin(config configuration.Config) {
 		} else {
 			userID, saveErr := dbHelper.CreateUser(tx, config.AdminName, config.AdminEmail, hashedPassword)
 			if saveErr != nil {
-				logrus.WithFields(log.Fields{
+				log.Logger.WithFields(log.Fields{
 					"time":        time.Now(),
 					"uuid":        logid.String(),
 					"requestBody": config,
@@ -242,7 +223,7 @@ func RegisterAdmin(config configuration.Config) {
 			}
 			roleErr := dbHelper.CreateUserRole(tx, userID, userID, models.RoleAdmin)
 			if roleErr != nil {
-				logrus.WithFields(log.Fields{
+				log.Logger.WithFields(log.Fields{
 					"time":        time.Now(),
 					"uuid":        logid.String(),
 					"requestBody": config,
@@ -253,14 +234,14 @@ func RegisterAdmin(config configuration.Config) {
 		return nil
 	})
 	if txErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time":        time.Now(),
 			"uuid":        logid.String(),
 			"requestBody": config,
 		}).Error("Unable to Create Admin.")
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": config,
@@ -270,10 +251,10 @@ func RegisterAdmin(config configuration.Config) {
 }
 
 func RemoveSubAdmin(w http.ResponseWriter, r *http.Request) {
-	logrus := logEditor.GetLogger()
+	logrus := log.GetLogger()
 	logid, logErr := uuid.NewV4()
 	if logErr != nil {
-		logrus.WithFields(log.Fields{
+		log.Logger.WithFields(log.Fields{
 			"time": time.Now(),
 			"uuid": logid,
 		}).Error(logErr)
@@ -306,7 +287,7 @@ func RemoveSubAdmin(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, http.StatusInternalServerError, txErr, "Failed to create user", "subAdminId: "+subAdminId)
 		return
 	}
-	logrus.WithFields(log.Fields{
+	log.Logger.WithFields(log.Fields{
 		"time":        time.Now(),
 		"uuid":        logid.String(),
 		"requestBody": "subAdminId: " + subAdminId,

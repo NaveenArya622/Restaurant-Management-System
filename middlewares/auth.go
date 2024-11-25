@@ -8,8 +8,6 @@ import (
 	"rms/models"
 	"rms/utils"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 type ContextKeys string
@@ -22,19 +20,19 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 	config, err := configuration.GetConfig()
 	if err != nil {
-		logrus.Printf("Error loading .env file")
+		log.Logger.Printf("Error loading .env file")
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := strings.Split(r.Header.Get("authorization"), " ")[1]
 		jwtErr := utils.ParseJwtToken(token, config.SessionKey)
 		if jwtErr != nil {
-			logrus.WithError(jwtErr).Errorf("Failed to get user with token: %s", token)
+			log.Logger.WithError(jwtErr).Errorf("Failed to get user with token: %s", token)
 			utils.RespondError(w, http.StatusUnauthorized, jwtErr, "Invalid Token", r.Body)
 			return
 		}
 		user, err := dbHelper.GetUserBySession(token)
 		if err != nil || user == nil {
-			logrus.WithError(err).Errorf("Failed to get user with token: %s", token)
+			log.Logger.WithError(err).Errorf("Failed to get user with token: %s", token)
 			utils.RespondError(w, http.StatusUnauthorized, err, "Failed to get user with token.", r.Body)
 			return
 		}
@@ -60,7 +58,7 @@ func ShouldHaveRole(roles []models.Role) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user := UserContext(r)
 			if user == nil {
-				logrus.Errorf("Failed to get user: %s", user)
+				log.Logger.Errorf("Failed to get user: %s", user)
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -72,7 +70,7 @@ func ShouldHaveRole(roles []models.Role) func(http.Handler) http.Handler {
 					return
 				}
 			}
-			logrus.Errorf("Failed to invalid UserRole: %v, accepted: %s", user.Roles, roles)
+			log.Logger.Errorf("Failed to invalid UserRole: %v, accepted: %s", user.Roles, roles)
 			w.WriteHeader(http.StatusForbidden)
 		})
 	}
